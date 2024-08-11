@@ -51,8 +51,11 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type", "application/json") // Добавим в хедер тип контента = JSON
 	w.WriteHeader(http.StatusOK)                       // Добавим в хедер 200 статус
-	w.Write(resp)                                      // Запишем в ответ наш JSON
-
+	_, err = w.Write(resp)                             // Запишем в ответ наш JSON
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest) // Вернём 400 при ошибке записи
+		return
+	}
 }
 
 // Обработчик эндпоинта /tasks, метод POST, добавляем задачку
@@ -71,10 +74,25 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверим, есть ли таска в мапе
+	if _, innit := tasks[task.ID]; innit {
+		_, err = w.Write([]byte("Задача с id = " + string(task.ID) + " уже существует!")) // Напишем юзеру о наличии задачки с таким ID
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest) // Вернём 400 при ошибке записи
+			return
+		}
+		return
+	}
+
 	tasks[task.ID] = task // Добавим в мапу новый таск
 
-	w.Header().Set("Content-Type", "application/json") // Добавим в хедер тип контента = JSON
-	w.WriteHeader(http.StatusCreated)                  // Добавим статус 201, Created
+	w.Header().Set("Content-Type", "application/json")                                   // Добавим в хедер тип контента = JSON
+	w.WriteHeader(http.StatusCreated)                                                    // Добавим статус 201, Created
+	_, err = w.Write([]byte("Задача с id = " + string(task.ID) + " успешно добавлена!")) // Решил добавить сообщение при успешном добавлении таски
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest) // Вернём 400 при ошибке записи
+		return
+	}
 }
 
 func getTaskById(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +112,12 @@ func getTaskById(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type", "application/json") // Добавим в хедер тип контента = JSON
 	w.WriteHeader(http.StatusOK)                       // Добавим в хедер 200 статус
-	w.Write(resp)                                      // Запишем в ответ наш JSON
+	_, err = w.Write(resp)                             // Запишем в ответ наш JSON
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest) // Вернём 400 при ошибке записи
+		return
+	}
 }
 
 func deleteTaskById(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +131,14 @@ func deleteTaskById(w http.ResponseWriter, r *http.Request) {
 
 	delete(tasks, task.ID) // Удаляем из мапы переданную нам таску по ID
 
-	w.Header().Set("Content-Type", "application/json") // Добавим в хедер тип контента = JSON
-	w.WriteHeader(http.StatusOK)                       // Добавим статус 200, OK
+	w.Header().Set("Content-Type", "application/json")                                  // Добавим в хедер тип контента = JSON
+	w.WriteHeader(http.StatusOK)                                                        // Добавим статус 200, OK
+	_, err := w.Write([]byte("Задача с id = " + string(task.ID) + " успешно удалена!")) // Решил добавить сообщение при успешном добавлении таски
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest) // Вернём 400 при ошибке записи
+		return
+	}
+
 }
 
 func main() {
